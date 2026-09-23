@@ -39,9 +39,44 @@ Analyze the diff below and return a JSON object with this exact schema:
   ]
 }
 
-Rules:
+SEVERITY RULES (follow these strictly):
+- "error": code that will crash, corrupt data, or create a security vulnerability
+- "warning": code that works but is fragile, inefficient, or likely to cause bugs later
+- "info": minor style, readability, or documentation issues
+
+CATEGORY RULES:
+- "bug": logic errors, null dereferences, undefined variables, type mismatches
+- "security": injection, hardcoded secrets, missing auth, unsafe eval
+- "performance": O(n²) loops, redundant queries, unbounded memory
+- "style": unused imports, naming, formatting
+- "test": missing tests for new code paths
+
+FEW-SHOT EXAMPLES:
+
+Input diff: "+ import os\\n+ def get_user(id):\\n+     user = db.query(id)\\n+     return user.name"
+
+Correct output:
+{"comments": [
+    {"line": 1, "severity": "info", "category": "style", "message": "Unused import: os is imported but never used."},
+    {"line": 3, "severity": "error", "category": "bug", "message": "Variable 'db' is referenced but not defined or imported. This will raise NameError at runtime."},
+    {"line": 4, "severity": "warning", "category": "bug", "message": "If db.query(id) returns None, accessing user.name will raise AttributeError. Add a null check."}
+]}
+
+Input diff: "+ def divide(a, b):\\n+     return a / b"
+
+Correct output:
+{"comments": [
+    {"line": 2, "severity": "warning", "category": "bug", "message": "Division by zero is not handled. If b is 0, this raises ZeroDivisionError. Add a check before dividing."}
+]}
+
+Input diff: "+ def add(a, b):\\n+     return a + b"
+
+Correct output:
+{"comments": []}
+
+RULES:
 - Only comment on real issues. Do not invent problems.
-- Be specific. "This variable is unused" is good. "Consider improving this" is bad.
+- Be specific. Name the variable, the function, the exact risk.
 - If the diff is clean, return {"comments": []}.
 - Return ONLY the JSON. No markdown, no explanation.
 
