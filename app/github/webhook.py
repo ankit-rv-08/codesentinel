@@ -21,9 +21,22 @@ from app.llm.reviewer import review_diff
 
 router = APIRouter()
 
-GITHUB_APP_ID = int(os.getenv("GITHUB_APP_ID"))
-PRIVATE_KEY_PATH = os.getenv("GITHUB_PRIVATE_KEY_PATH")
-WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
+def get_app_id() -> int:
+    val = os.getenv("GITHUB_APP_ID", "").strip()
+    if not val:
+        raise RuntimeError("GITHUB_APP_ID env var is not set")
+    return int(val)
+
+
+def get_webhook_secret() -> str:
+    val = os.getenv("GITHUB_WEBHOOK_SECRET", "").strip()
+    if not val:
+        raise RuntimeError("GITHUB_WEBHOOK_SECRET env var is not set")
+    return val
+
+
+def get_private_key_path() -> str:
+    return os.getenv("GITHUB_PRIVATE_KEY_PATH", "github-app.pem")
 
 
 def load_private_key() -> str:
@@ -32,7 +45,7 @@ def load_private_key() -> str:
     if env_key:
         return env_key.replace("\\n", "\n")
 
-    path = Path(PRIVATE_KEY_PATH).expanduser().resolve()
+    path = Path(get_private_key_path()).expanduser().resolve()
     if not path.exists():
         raise FileNotFoundError(f"Private key not found at {path}")
     return path.read_text()
@@ -43,7 +56,7 @@ def verify_signature(payload: bytes, signature: str) -> bool:
     if not signature:
         return False
     expected = "sha256=" + hmac.new(
-        WEBHOOK_SECRET.encode(), payload, hashlib.sha256
+        get_webhook_secret().encode(), payload, hashlib.sha256
     ).hexdigest()
     return hmac.compare_digest(expected, signature)
 
@@ -51,7 +64,7 @@ def verify_signature(payload: bytes, signature: str) -> bool:
 def get_installation_client(installation_id: int) -> Github:
     """Get an authenticated GitHub client for a specific installation."""
     private_key = load_private_key()
-    auth = Auth.AppAuth(GITHUB_APP_ID, private_key)
+    auth = Auth.AppAuth(get_app_id(), private_key)
     gi = GithubIntegration(auth=auth)
     installation = gi.get_app_installation(installation_id)
     return installation.get_github_for_installation()
