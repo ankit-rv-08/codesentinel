@@ -2,6 +2,7 @@
 .env
 venv/
 github-app.pem
+codesentinel.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
