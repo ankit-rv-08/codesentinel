@@ -1,6 +1,7 @@
 # Local environment and virtual environment
 .env
 venv/
+github-app.pem
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
