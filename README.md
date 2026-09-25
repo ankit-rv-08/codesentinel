@@ -153,9 +153,10 @@ Select the repositories you want CodeSentinel to review. It will start commentin
 - A Groq API key (console.groq.com)
 - Cloudflare Tunnel (`brew install cloudflared`)
 
----
+  
 
-**1. Clone and install**
+##
+1. Clone and install**
 
 ```bash
 git clone https://github.com/ankit-rv-08/codesentinel.git
@@ -164,8 +165,9 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
----
 
+
+##
 
 2. Configure environment
 
@@ -179,13 +181,14 @@ GITHUB_WEBHOOK_SECRET=your_webhook_secret
 DATABASE_URL=sqlite:///./codesentinel.db
 3. Start the tunnel
 
-bash
+##
+```bash
 cloudflared tunnel --url http://localhost:8000
 Set the generated URL as the Webhook URL in your GitHub App settings, with /webhook appended.
 
 4. Start the server
 
-bash
+```bash
 uvicorn app.main:app --reload --port 8000
 5. Install the App on a test repo, open a PR, and watch the comments appear.
 
@@ -218,9 +221,9 @@ json
 ---
 
 
+##
 Project structure
 
-text
 
 codesentinel/
 ├── app/
