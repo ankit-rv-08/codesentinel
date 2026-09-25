@@ -51,10 +51,11 @@ ERROR (security): Hardcoded API key exposed in source code; store secrets in env
 WARNING (security): MD5 is used for password hashing, which is cryptographically weak. Use bcrypt, Argon2, or PBKDF2.
 ERROR (bug): Variable 'db' is referenced but not defined or imported, causing a NameError at runtime.
 ERROR (security): SQL query is built via string interpolation, leading to potential SQL injection. Use parameterized queries.
+```
 
+## Architecture
 
-Architecture
-
+```text
 GitHub PR opened
       |
       v
@@ -77,87 +78,100 @@ PostgreSQL -> log review
       |
       v
 Next.js dashboard on Vercel (reads /api/stats)
+```
 
-https://docs/render-logs.png
+![Render production logs](docs/render-logs.png)
 
-Tech stack
+## Tech stack
 
-Layer	Technology
-Backend framework	FastAPI
-GitHub integration	PyGithub + GitHub App
-LLM	Groq GPT-OSS-120B (fallback chain)
-Database	PostgreSQL (Render)
-ORM	SQLAlchemy
-Dashboard	Next.js 16, TypeScript, Tailwind, Recharts
-Hosting	Render (backend), Vercel (dashboard)
-Monitoring	UptimeRobot (5-min health checks)
+| Layer | Technology |
+|---|---|
+| Backend framework | FastAPI |
+| GitHub integration | PyGithub + GitHub App |
+| LLM | Groq GPT-OSS-120B (fallback chain) |
+| Database | PostgreSQL (Render) |
+| ORM | SQLAlchemy |
+| Dashboard | Next.js 16, TypeScript, Tailwind, Recharts |
+| Hosting | Render (backend), Vercel (dashboard) |
+| Monitoring | UptimeRobot (5-min health checks) |
 
-Model fallback chain
+## Model fallback chain
 
 Regional model availability varies. CodeSentinel tries each model in order and uses the first that responds:
 
-openai/gpt-oss-120b — strongest reasoning
-openai/gpt-oss-20b — smaller, faster
-qwen/qwen3.8-27b — final fallback
+1. `openai/gpt-oss-120b` — strongest reasoning
+2. `openai/gpt-oss-20b` — smaller, faster
+3. `qwen/qwen3.8-27b` — final fallback
+
 This makes the app resilient to regional outages and quota limits.
 
-Live dashboard
+## Live dashboard
 
-https://docs/dashboard.png
+![CodeSentinel dashboard](docs/dashboard.png)
 
 Real-time metrics from PostgreSQL:
 
-Total reviews, comments posted, average latency, files reviewed
-Recent reviews table (repo, PR #, comment count, severity, latency, timestamp)
-Severity breakdown donut chart
-Dashboard source: codesentinel-dashboard
+- Total reviews, comments posted, average latency, files reviewed
+- Recent reviews table (repo, PR #, comment count, severity, latency, timestamp)
+- Severity breakdown donut chart
 
-Install
+Dashboard source: [codesentinel-dashboard](https://github.com/ankit-rv-08/codesentinel-dashboard)
 
-Visit https://github.com/apps/codesentinel-ankit and click Install.
+## Install
+
+Visit **https://github.com/apps/codesentinel-ankit** and click **Install**.
 
 Select the repositories you want CodeSentinel to review. It will start commenting on new pull requests within seconds.
 
-Local setup
+## Local setup
 
-Prerequisites:
+**Prerequisites:**
 
-Python 3.11+
-A GitHub App (create at github.com/settings/apps)
-A Groq API key (console.groq.com)
+- Python 3.11+
+- A GitHub App (create at github.com/settings/apps)
+- A Groq API key (console.groq.com)
 
-1. Clone and install
+**1. Clone and install**
 
+```bash
 git clone https://github.com/ankit-rv-08/codesentinel.git
 cd codesentinel
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+```
 
-2. Configure environment
+**2. Configure environment**
 
-Create .env:
+Create `.env`:
 
+```text
 GROQ_API_KEY=your_groq_key
 GITHUB_APP_ID=your_app_id
 GITHUB_PRIVATE_KEY_PATH=github-app.pem
 GITHUB_WEBHOOK_SECRET=your_webhook_secret
 DATABASE_URL=sqlite:///./codesentinel.db
-3. Start the server
+```
 
-bash
+**3. Start the server**
+
+```bash
 uvicorn app.main:app --reload --port 8000
-4. Install the App on a test repo, open a PR, and watch the comments appear.
+```
 
-API
+**4. Install the App on a test repo, open a PR, and watch the comments appear.**
 
-GET /health — health check
+## API
 
-json
+**`GET /health`** — health check
+
+```json
 {"status": "ok", "service": "codesentinel"}
-GET /api/stats — aggregate telemetry
+```
 
-json
+**`GET /api/stats`** — aggregate telemetry
+
+```json
 {
   "total_reviews": 1,
   "total_comments": 5,
@@ -174,9 +188,11 @@ json
     }
   ]
 }
+```
 
-Project structure
+## Project structure
 
+```text
 codesentinel/
 ├── app/
 │   ├── main.py
@@ -192,58 +208,61 @@ codesentinel/
 ├── requirements.txt
 ├── runtime.txt
 └── README.md
+```
 
-Status
+## Status
 
-☑ Core LLM review engine (Groq GPT-OSS-120B)
-☑ Model fallback chain for regional availability
-☑ GitHub App registration and installation
-☑ Webhook handler with HMAC signature verification
-☑ PR diff fetching via GitHub API
-☑ Structured JSON review output
-☑ Inline comment posting
-☑ PostgreSQL review logging
-☑ /api/stats telemetry endpoint
-☑ Production deployment (Render)
-☑ Uptime monitoring (UptimeRobot)
-☑ Next.js dashboard (Vercel)
-☑ Public installability
-Roadmap
+- [x] Core LLM review engine (Groq GPT-OSS-120B)
+- [x] Model fallback chain for regional availability
+- [x] GitHub App registration and installation
+- [x] Webhook handler with HMAC signature verification
+- [x] PR diff fetching via GitHub API
+- [x] Structured JSON review output
+- [x] Inline comment posting
+- [x] PostgreSQL review logging
+- [x] /api/stats telemetry endpoint
+- [x] Production deployment (Render)
+- [x] Uptime monitoring (UptimeRobot)
+- [x] Next.js dashboard (Vercel)
+- [x] Public installability
 
-v0.4 — Configuration
+## Roadmap
 
-.codesentinel.yml in the repo to control severity thresholds and file exclusions
-v0.5 — Rate limiting
+**v0.4 — Configuration**
 
-Per-installation limits to prevent abuse
-v0.6 — Team features
+- `.codesentinel.yml` in the repo to control severity thresholds and file exclusions
 
-Slack/Discord webhook integration
-GitHub Check Runs
-Design decisions
+**v0.5 — Rate limiting**
 
-Why Groq?
+- Per-installation limits to prevent abuse
+
+**v0.6 — Team features**
+
+- Slack/Discord webhook integration
+- GitHub Check Runs
+
+## Design decisions
+
+**Why Groq?**
 
 Groq's free tier has enough headroom for real use, and GPT-OSS-120B is a strong reasoning model. The fallback chain handles regional availability issues.
 
-Why a model fallback chain?
+**Why a model fallback chain?**
 
 Model availability varies by region. A fallback chain ensures the app never fails silently — it just uses the next best model.
 
-Why HMAC signature verification?
+**Why HMAC signature verification?**
 
 GitHub signs every webhook with a shared secret. Verifying the signature ensures the request came from GitHub.
 
-Why read the PEM into memory instead of passing the path?
+**Why read the PEM into memory instead of passing the path?**
 
-PyGithub has issues with relative paths and newline handling. Reading the file into a string avoids InvalidKeyError.
+PyGithub has issues with relative paths and newline handling. Reading the file into a string avoids `InvalidKeyError`.
 
-Why lazy env var resolution?
+**Why lazy env var resolution?**
 
 Reading env vars at module load time means a missing var crashes the whole app at import. Reading them inside functions lets the app start, then fail with a clear error when needed.
 
-License
+## License
 
 MIT.
-
-
