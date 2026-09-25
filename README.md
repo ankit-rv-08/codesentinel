@@ -1,33 +1,42 @@
-<p align="center">
-	<img src="codesentinel-icon.png" width="120" alt="CodeSentinel" />
-</p>
+# 🛡️ CodeSentinel
 
-<h1 align="center">CodeSentinel</h1>
-<p align="center"><strong>AI-powered code review GitHub App</strong></p>
+**AI-powered code review GitHub App.** LLM-driven PR reviews with structured inline comments.
 
-<p align="center">
-	<a href="https://github.com/ankit-rv-08/codesentinel/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
-	<img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python" />
-	<img src="https://img.shields.io/badge/FastAPI-0.115-009688" alt="FastAPI" />
-	<img src="https://img.shields.io/badge/Groq-GPT--OSS--120B-orange" alt="Groq" />
-</p>
+FastAPI • GitHub API • Groq GPT-OSS-120B • PostgreSQL • Next.js
+
+[![Live Dashboard](https://img.shields.io/badge/dashboard-live-4F46E5)](https://codesentinel-dashboard.vercel.app)
+[![Backend API](https://img.shields.io/badge/api-live-34C759)](https://codesentinel-u6se.onrender.com/health)
+[![Install on GitHub](https://img.shields.io/badge/install-GitHub_App-1D1D1F)](https://github.com/apps/codesentinel-ankit)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 ---
 
-CodeSentinel is a GitHub App that reviews pull requests automatically. When a PR is opened or updated, it fetches the diff, sends it to an LLM, and posts structured inline comments on bugs, style issues, security problems, and missing tests.
+## 🔗 Live
 
-**End-to-end verified.** See [#1](https://github.com/ankit-rv-08/codesentinel/pull/1) for a working example — the bot posted three inline comments on a test file with deliberate bugs.
+| Resource | URL |
+|---|---|
+| Dashboard | https://codesentinel-dashboard.vercel.app |
+| Backend API | https://codesentinel-u6se.onrender.com |
+| GitHub App | https://github.com/apps/codesentinel-ankit |
+| Source | https://github.com/ankit-rv-08/codesentinel |
+
+---
+
+![CodeSentinel inline review comments](docs/pr-comments.png)
 
 ---
 
 ## What it does
 
-1. GitHub sends a `pull_request` webhook when a PR is opened or synchronized
-2. The FastAPI server verifies the webhook's HMAC signature
-3. It fetches the PR diff via the GitHub API
-4. Each changed file is sent to an LLM with a structured review prompt
-5. The LLM returns JSON comments with severity, category, and message
-6. Comments are posted back on the PR at the exact line
+CodeSentinel is a GitHub App that reviews pull requests automatically. When a PR is opened or synchronized, it:
+
+1. Receives a `pull_request` webhook from GitHub
+2. Verifies the webhook's HMAC signature
+3. Fetches the PR diff via the GitHub API
+4. Sends each changed file to an LLM with a structured review prompt
+5. Parses structured JSON output (bugs, style, security, performance)
+6. Posts inline comments back on the PR at the exact line
+7. Logs the review to PostgreSQL
 
 ---
 
@@ -38,40 +47,35 @@ CodeSentinel is a GitHub App that reviews pull requests automatically. When a PR
 | **error** | bug | Undefined variable, null dereference |
 | **error** | security | SQL injection, hardcoded secrets |
 | **warning** | bug | Division by zero, missing null check |
-| **warning** | performance | O(n²) loops, redundant queries |
+| **warning** | security | Weak hashing algorithm (MD5) |
+| **warning** | performance | O(n²) loops, unclosed connections |
 | **info** | style | Unused imports, naming, formatting |
 | **info** | test | Missing tests for new code paths |
 
 Each comment follows the format:
-
-```text
 SEVERITY (category): specific, actionable message
-```
 
-For example:
+text
 
-```text
-ERROR (bug): Variable 'db' is referenced but not defined or imported. This will raise NameError at runtime.
-WARNING (bug): If db.query(id) returns None, accessing user.name will raise AttributeError.
-INFO (style): Unused import: os is imported but never used.
-```
+Example from a real review:
+ERROR (security): Hardcoded API key exposed in source code; this secret should be stored securely (e.g., environment variable or secret manager).
+WARNING (security): MD5 is used for password hashing, which is cryptographically weak. Use a stronger algorithm like bcrypt, Argon2, or PBKDF2.
+ERROR (bug): Variable 'db' is referenced but not defined or imported, causing a NameError at runtime.
+ERROR (security): SQL query is built via string interpolation, leading to potential SQL injection. Use parameterized queries instead.
+
+text
 
 ---
 
 ## Architecture
-
-```text
 GitHub PR opened
 │
 ▼
 GitHub sends pull_request webhook
 │
 ▼
-Cloudflare Tunnel → localhost:8000
+Render (FastAPI) ← HMAC signature verification
 │
-▼
-FastAPI /webhook endpoint
-│ verifies HMAC signature
 ▼
 GitHub API → fetch PR diff
 │
@@ -82,8 +86,14 @@ Groq LLM review (model fallback chain)
 GitHub API → post inline comments
 │
 ▼
-Comments appear on the PR
-```
+PostgreSQL → log review
+│
+▼
+Next.js dashboard on Vercel (reads /api/stats)
+
+text
+
+![Render production logs](docs/render-logs.png)
 
 ---
 
@@ -91,11 +101,14 @@ Comments appear on the PR
 
 | Layer | Technology |
 |---|---|
-| Web framework | FastAPI |
+| Backend framework | FastAPI |
 | GitHub integration | PyGithub + GitHub App |
 | LLM | Groq GPT-OSS-120B (fallback chain) |
-| Tunnel (dev) | Cloudflare Tunnel |
-| Language | Python 3.11+ |
+| Database | PostgreSQL (Render) |
+| ORM | SQLAlchemy |
+| Dashboard | Next.js 16, TypeScript, Tailwind, Recharts |
+| Hosting | Render (backend), Vercel (dashboard) |
+| Monitoring | UptimeRobot (5-min health checks) |
 
 ---
 
@@ -108,6 +121,27 @@ Regional model availability varies. CodeSentinel tries each model in order and u
 3. `qwen/qwen3.8-27b` — final fallback
 
 This makes the app resilient to regional outages and quota limits.
+
+---
+
+## Live dashboard
+
+![CodeSentinel dashboard](docs/dashboard.png)
+
+Real-time metrics from PostgreSQL:
+- Total reviews, comments posted, average latency, files reviewed
+- Recent reviews table (repo, PR #, comment count, severity, latency, timestamp)
+- Severity breakdown donut chart
+
+Dashboard source: [codesentinel-dashboard](https://github.com/ankit-rv-08/codesentinel-dashboard)
+
+---
+
+## Install
+
+Visit **https://github.com/apps/codesentinel-ankit** and click **Install**.
+
+Select the repositories you want CodeSentinel to review. It will start commenting on new pull requests within seconds.
 
 ---
 
@@ -127,146 +161,119 @@ cd codesentinel
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-```
+2. Configure environment
 
-**2. Configure environment**
+Create .env:
 
-Create `.env` in the project root:
-
-```text
+text
 GROQ_API_KEY=your_groq_key
 GITHUB_APP_ID=your_app_id
 GITHUB_PRIVATE_KEY_PATH=github-app.pem
 GITHUB_WEBHOOK_SECRET=your_webhook_secret
-```
+DATABASE_URL=sqlite:///./codesentinel.db
+3. Start the tunnel
 
-Place the GitHub App's private key at `github-app.pem` in the project root. This file is gitignored — never commit it.
-
-**3. Start the tunnel**
-
-```bash
+bash
 cloudflared tunnel --url http://localhost:8000
-```
+Set the generated URL as the Webhook URL in your GitHub App settings, with /webhook appended.
 
-Copy the generated URL (e.g., `https://abc-xyz.trycloudflare.com`). Set it as the Webhook URL in your GitHub App settings, with `/webhook` appended:
+4. Start the server
 
-```text
-https://abc-xyz.trycloudflare.com/webhook
-```
-
-**4. Start the server**
-
-```bash
+bash
 uvicorn app.main:app --reload --port 8000
-```
+5. Install the App on a test repo, open a PR, and watch the comments appear.
 
-**5. Install the App**
+API
 
-Go to your GitHub App settings → Install App → install on a test repo.
+GET /health — health check
 
-**6. Test it**
+json
+{"status": "ok", "service": "codesentinel"}
+GET /api/stats — aggregate telemetry
 
-Open a PR on the test repo with a deliberate bug. Watch the FastAPI terminal — you'll see the webhook arrive, the LLM review run, and the comments post.
+json
+{
+  "total_reviews": 1,
+  "total_comments": 5,
+  "total_files_reviewed": 1,
+  "avg_latency_ms": 16055.0,
+  "recent_reviews": [
+    {
+      "repo": "ankit-rv-08/codesentinel",
+      "pr_number": 4,
+      "comments_posted": 5,
+      "severity_breakdown": {"error": 3, "warning": 1, "info": 1},
+      "latency_ms": 16055,
+      "created_at": "2026-09-24T18:37:15.795802+00:00"
+    }
+  ]
+}
+Project structure
 
-## End-to-end verification
-
-Test PR: [#1](https://github.com/ankit-rv-08/codesentinel/pull/1)
-
-The diff added:
-
-```python
-import os
-
-def get_user(id):
-		user = db.query(id)
-		return user.name
-```
-
-The bot posted three inline comments:
-
-- Line 1: INFO (style): Unused import: os is imported but never used.
-- Line 4: ERROR (bug): Variable 'db' is referenced but not defined or imported.
-- Line 5: WARNING (bug): If db.query(id) returns None, accessing user.name will raise AttributeError.
-
-## Project structure
-
-```text
+text
 codesentinel/
 ├── app/
-│   ├── __init__.py
 │   ├── main.py                    # FastAPI entry point
+│   ├── db.py                      # SQLAlchemy setup + Review model
 │   ├── github/
-│   │   ├── __init__.py
-│   │   └── webhook.py             # Webhook handler, GitHub API integration
-│   └── llm/
-│       ├── __init__.py
-│       └── reviewer.py            # LLM review engine with model fallback
+│   │   └── webhook.py             # Webhook handler, GitHub API, DB logging
+│   ├── llm/
+│   │   └── reviewer.py            # LLM review engine with model fallback
+│   └── api/
+│       └── stats.py               # /api/stats endpoint
 ├── tests/
 │   └── test_reviewer.py
-├── codesentinel-icon.png
-├── github-app.pem                 # gitignored
 ├── requirements.txt
-├── .env                           # gitignored
-├── .env.example
-├── .gitignore
-├── LICENSE
+├── runtime.txt
 └── README.md
-```
+Status
 
-## Status
+☑ Core LLM review engine (Groq GPT-OSS-120B)
+☑ Model fallback chain for regional availability
+☑ GitHub App registration and installation
+☑ Webhook handler with HMAC signature verification
+☑ PR diff fetching via GitHub API
+☑ Structured JSON review output
+☑ Inline comment posting
+☑ PostgreSQL review logging
+☑ /api/stats telemetry endpoint
+☑ Production deployment (Render)
+☑ Uptime monitoring (UptimeRobot)
+☑ Next.js dashboard (Vercel)
+☑ Public installability
+Roadmap
 
-☑ Core LLM review engine (Groq GPT-OSS-120B)<br>
-☑ Model fallback chain for regional availability<br>
-☑ GitHub App registration and installation<br>
-☑ Webhook handler with HMAC signature verification<br>
-☑ PR diff fetching via GitHub API<br>
-☑ Structured JSON review output<br>
-☑ Inline comment posting<br>
-☑ End-to-end tested on a real PR<br>
-□ PostgreSQL review logging<br>
-□ Metrics dashboard (Next.js)<br>
-□ Rate limiting per installation<br>
-□ Config file (`.codesentinel.yml`) for custom severity thresholds<br>
-□ Support for GitHub Enterprise
+v0.4 — Configuration
 
-## Roadmap
+.codesentinel.yml in the repo to control severity thresholds and file exclusions
+v0.5 — Rate limiting
 
-### v0.2 — Persistence
+Per-installation limits to prevent abuse
+v0.6 — Team features
 
-Log every review to PostgreSQL (repo, PR number, comments, latency, model used). Expose `/api/stats` endpoint for telemetry.
+Slack/Discord webhook integration
+GitHub Check Runs (in addition to inline comments)
+Design decisions
 
-### v0.3 — Dashboard
-
-Next.js dashboard showing PRs reviewed, top issue categories, average response time, and model usage.
-
-### v0.4 — Configuration
-
-`.codesentinel.yml` in the repo to control which categories to review, severity thresholds, and file exclusions.
-
-### v0.5 — Rate limiting
-
-Per-installation limits to prevent abuse on shared infrastructure.
-
-## Design decisions
-
-### Why Groq, not OpenAI or Gemini?
-
+Why Groq?
 Groq's free tier has enough headroom for real use, and GPT-OSS-120B is a strong reasoning model. The fallback chain handles regional availability issues.
 
-### Why a model fallback chain?
+Why a model fallback chain?
+Model availability varies by region. A fallback chain ensures the app never fails silently — it just uses the next best model.
 
-Regional availability varies. Model IDs that work from one region may not work from another. A fallback chain means the app never fails silently — it just uses the next best model.
+Why HMAC signature verification?
+GitHub signs every webhook with a shared secret. Verifying the signature ensures the request came from GitHub, not from an attacker trying to trigger reviews.
 
-### Why HMAC signature verification?
+Why read the PEM into memory instead of passing the path?
+PyGithub has issues with relative paths and newline handling. Reading the file into a string avoids InvalidKeyError from unexpected whitespace.
 
-GitHub signs every webhook with a shared secret. Verifying the signature ensures the request actually came from GitHub and not from an attacker trying to trigger reviews.
+Why lazy env var resolution?
+Reading env vars at module load time means a missing var crashes the whole app at import. Reading them inside functions lets the app start, then fail with a clear error only when needed.
 
-### Why read the PEM file into memory instead of passing the path?
-
-PyGithub has had issues with relative PEM paths and newline handling. Reading the file into a string and passing it directly avoids the `InvalidKeyError` that comes up when the file has unexpected whitespace.
-
-## License
+License
 
 MIT.
+
+text
 
 ---
