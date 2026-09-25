@@ -153,6 +153,8 @@ Select the repositories you want CodeSentinel to review. It will start commentin
 - A Groq API key (console.groq.com)
 - Cloudflare Tunnel (`brew install cloudflared`)
 
+---
+
 **1. Clone and install**
 
 ```bash
@@ -161,6 +163,10 @@ cd codesentinel
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+
+---
+
+
 2. Configure environment
 
 Create .env:
@@ -208,9 +214,14 @@ json
     }
   ]
 }
+
+---
+
+
 Project structure
 
 text
+
 codesentinel/
 ├── app/
 │   ├── main.py                    # FastAPI entry point
@@ -226,6 +237,10 @@ codesentinel/
 ├── requirements.txt
 ├── runtime.txt
 └── README.md
+
+---
+
+
 Status
 
 ☑ Core LLM review engine (Groq GPT-OSS-120B)
@@ -253,6 +268,9 @@ v0.6 — Team features
 
 Slack/Discord webhook integration
 GitHub Check Runs (in addition to inline comments)
+
+---
+
 Design decisions
 
 Why Groq?
@@ -269,6 +287,8 @@ PyGithub has issues with relative paths and newline handling. Reading the file i
 
 Why lazy env var resolution?
 Reading env vars at module load time means a missing var crashes the whole app at import. Reading them inside functions lets the app start, then fail with a clear error only when needed.
+
+---
 
 License
 
