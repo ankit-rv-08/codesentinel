@@ -8,4 +8,4 @@ PyGithub==2.10.0
 python-multipart==0.0.32
 pytest==9.1.1
 sqlalchemy
-psycopg2-binary
+psycopg[binary]
