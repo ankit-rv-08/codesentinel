@@ -273,7 +273,3 @@ Reading env vars at module load time means a missing var crashes the whole app a
 License
 
 MIT.
-
-text
-
----
